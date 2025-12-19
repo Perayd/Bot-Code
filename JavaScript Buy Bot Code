@@ -1,0 +1,47 @@
+require("dotenv").config();
+const { ethers } = require("ethers");
+
+// CONFIG
+const RPC_URL = process.env.RPC_URL;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+
+// Uniswap V2 Router (Ethereum mainnet)
+const ROUTER = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+const WETH = "0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2";
+
+// TOKEN YOU WANT TO BUY
+const TOKEN = "0xTOKEN_ADDRESS_HERE";
+
+// AMOUNT (ETH)
+const AMOUNT_IN_ETH = "0.01";
+
+// ABI (minimum)
+const routerABI = [
+  "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)"
+];
+
+async function buyToken() {
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+  const router = new ethers.Contract(ROUTER, routerABI, wallet);
+
+  const path = [WETH, TOKEN];
+  const deadline = Math.floor(Date.now() / 1000) + 60 * 5;
+
+  const tx = await router.swapExactETHForTokens(
+    0, // amountOutMin (⚠️ unsafe, but simple)
+    path,
+    wallet.address,
+    deadline,
+    {
+      value: ethers.parseEther(AMOUNT_IN_ETH),
+      gasLimit: 300000
+    }
+  );
+
+  console.log("Transaction sent:", tx.hash);
+  await tx.wait();
+  console.log("Token purchased!");
+}
+
+buyToken().catch(console.error);
